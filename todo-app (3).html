@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Taskboard</title>
+<style>
+:root{--accent:#db4c3f;--accent-d:#c3392d;--bg:#fff;--side:#fcfaf8;--text:#202020;--mute:#6e6e6e;--line:#ececec;--p1:#d1453b;--p2:#eb8909;--p3:#246fe0;--p4:#8a8a8a;--ok:#2e8b57}
+@media(prefers-color-scheme:dark){:root{--bg:#1d1d1d;--side:#232323;--text:#ececec;--mute:#a0a0a0;--line:#333;--accent:#ee6a5d}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);display:flex}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+aside{width:272px;background:var(--side);border-right:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:4px;overflow:auto;flex-shrink:0}
+.brand{font-weight:700;font-size:18px;padding:4px 10px 12px;display:flex;align-items:center;gap:8px}
+.brand i{width:22px;height:22px;border-radius:6px;background:var(--accent);display:inline-block}
+.nav{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:8px;width:100%;text-align:left}
+.nav:hover{background:rgba(128,128,128,.12)}
+.nav.on{background:rgba(219,76,63,.12);color:var(--accent);font-weight:600}
+.nav .n{margin-left:auto;font-size:12px;color:var(--mute)}
+.badge{margin-left:auto;background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:99px;padding:1px 8px}
+.pick{padding:6px 10px}
+.pick label{display:block;font-size:13px;color:var(--mute);margin-bottom:4px}
+input[type=date],input[type=text],textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg)}
+.sync{margin-top:auto;font-size:12.5px;color:var(--mute);padding:10px;border:1px dashed var(--line);border-radius:8px}
+.sync b{color:var(--ok)}.sync.err b{color:var(--accent)}
+.sync button{color:var(--accent);text-decoration:underline;padding:4px 0}
+main{flex:1;min-width:0;overflow:auto}
+.wrap{max-width:760px;margin:0 auto;padding:16px 20px 120px}
+.top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+#menu{display:none;width:44px;height:44px;font-size:22px;border-radius:8px}
+h1{font-size:26px;margin:8px 0 2px}
+.sub{color:var(--mute);font-size:13px;margin-bottom:14px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tab{min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:99px}
+.tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+h2{font-size:14px;margin:20px 0 4px;padding-bottom:6px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center}
+h2.od{color:var(--accent)}
+.task{display:flex;gap:12px;align-items:flex-start;padding:12px 4px;border-bottom:1px solid var(--line)}
+.chk{width:26px;height:26px;border-radius:50%;border:2px solid var(--p4);flex-shrink:0;margin-top:1px;display:grid;place-items:center;position:relative}
+.chk::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) scale(0);margin-top:-2px;transition:transform .2s}
+.chk.p1{border-color:var(--p1);background:rgba(209,69,59,.1)}.chk.p2{border-color:var(--p2);background:rgba(235,137,9,.1)}.chk.p3{border-color:var(--p3);background:rgba(36,111,224,.1)}
+.done .chk{background:var(--ok);border-color:var(--ok)}.done .chk::after{transform:rotate(45deg) scale(1)}
+.body{flex:1;min-width:0}
+.ttl{word-break:break-word;background:linear-gradient(currentColor,currentColor) no-repeat 0 55%/0 1.5px;transition:background-size .3s,color .3s}
+.done .ttl{background-size:100% 1.5px;color:var(--mute)}
+.desc{font-size:13px;color:var(--mute);word-break:break-word}
+.meta{font-size:12px;color:var(--mute);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
+.meta .late{color:var(--accent);font-weight:600}
+.acts{display:flex}
+.ic{width:40px;height:40px;border-radius:8px;color:var(--mute);font-size:16px}
+.ic:hover{background:rgba(128,128,128,.15);color:var(--text)}
+.empty{text-align:center;color:var(--mute);padding:48px 0}
+.fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--accent);color:#fff;font-weight:600;border-radius:99px;min-height:52px;padding:0 22px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.fab:hover{background:var(--accent-d)}
+dialog{border:0;border-radius:14px;padding:0;width:min(480px,94vw);background:var(--bg);color:var(--text);box-shadow:0 12px 40px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+form{padding:18px;display:flex;flex-direction:column;gap:12px}
+form label{font-size:13px;color:var(--mute);display:block;margin-bottom:4px}
+.pr{display:flex;gap:6px;flex-wrap:wrap}
+.pr label{margin:0;color:var(--text)}
+.pr input{position:absolute;opacity:0}
+.pr span{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border:1.5px solid var(--line);border-radius:8px}
+.pr input:checked+span{border-color:currentColor;font-weight:600;background:rgba(128,128,128,.1)}
+.pr input:focus-visible+span{outline:2px solid var(--accent)}
+.row{display:flex;gap:8px;justify-content:flex-end}
+.btn{min-height:44px;padding:0 18px;border-radius:8px;background:rgba(128,128,128,.15)}
+.btn.pri{background:var(--accent);color:#fff;font-weight:600}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#2b2b2b;color:#fff;padding:10px 14px;border-radius:10px;display:none;align-items:center;gap:12px;z-index:30;max-width:92vw}
+#toast.show{display:flex}#toast button{color:#ffb4ab;font-weight:700;min-height:32px}
+details{margin-top:28px;font-size:13px;color:var(--mute);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+details summary{cursor:pointer;color:var(--text);font-weight:600}
+details ol{padding-left:18px}
+.scrim{display:none}
+@media(max-width:800px){
+ #menu{display:block}
+ aside{position:fixed;inset:0 auto 0 0;z-index:20;transform:translateX(-100%);transition:transform .2s;box-shadow:4px 0 24px rgba(0,0,0,.25)}
+ body.open aside{transform:none}
+ body.open .scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:15}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<aside id="side" aria-label="Task navigation">
+  <div class="brand"><i></i>Taskboard</div>
+  <button class="nav" data-view="overdue"><span>Overdue tasks</span><span class="badge" id="odBadge" hidden>0</span></button>
+  <button class="nav" data-view="yesterday">Yesterday<span class="n" id="n-yesterday"></span></button>
+  <button class="nav" data-view="today">Today<span class="n" id="n-today"></span></button>
+  <button class="nav" data-view="tomorrow">Tomorrow<span class="n" id="n-tomorrow"></span></button>
+  <button class="nav" data-view="all">All tasks<span class="n" id="n-all"></span></button>
+  <div class="pick"><label for="pickDate">Custom date</label><input type="date" id="pickDate"></div>
+  <div class="sync" id="sync" role="status"></div>
+</aside>
+<div class="scrim" id="scrim"></div>
+<main>
+ <div class="wrap">
+  <div class="top"><button id="menu" aria-label="Open menu">☰</button></div>
+  <h1 id="title"></h1>
+  <div class="sub" id="sub"></div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div id="list"></div>
+  <details>
+   <summary>Test that your data is saved</summary>
+   <ol>
+    <li>Add a task, then press F5 (or Ctrl/Cmd+R). It is still there.</li>
+    <li>Hard-reload with Ctrl+Shift+R (Cmd+Shift+R on Mac). The task remains.</li>
+    <li>Complete a task, close the tab, reopen the file. It stays struck through.</li>
+    <li>Use “Show saved data” in the sidebar to view the raw JSON stored in your browser.</li>
+   </ol>
+   Private/incognito windows clear storage on close, and file:// pages in some browsers keep separate storage per file location. Always open the same file from the same place.
+  </details>
+ </div>
+</main>
+<button class="fab" id="add">+ Add task</button>
+
+<dialog id="dlg">
+ <form id="form" method="dialog">
+  <h2 id="dTitle" style="margin:0;border:0">Add task</h2>
+  <div><label for="fT">Title</label><input type="text" id="fT" required maxlength="200" placeholder="e.g. Draft methods section"></div>
+  <div><label for="fD">Description (optional)</label><textarea id="fD" rows="3" maxlength="1000"></textarea></div>
+  <div><label>Priority</label>
+   <div class="pr">
+    <label style="color:var(--p1)"><input type="radio" name="pr" value="1"><span>P1 Red</span></label>
+    <label style="color:var(--p2)"><input type="radio" name="pr" value="2"><span>P2 Orange</span></label>
+    <label style="color:var(--p3)"><input type="radio" name="pr" value="3"><span>P3 Blue</span></label>
+    <label style="color:var(--p4)"><input type="radio" name="pr" value="4" checked><span>P4 Grey</span></label>
+   </div></div>
+  <div><label for="fDate">Target date</label><input type="date" id="fDate" required></div>
+  <div class="row"><button type="button" class="btn" id="cancel">Cancel</button><button type="submit" class="btn pri" id="save">Save task</button></div>
+ </form>
+</dialog>
+<div id="toast" role="status"><span id="tMsg"></span><button id="tUndo" hidden>Undo</button></div>
+
+<script>
+const KEY = 'taskboard.tasks.v1';
+let tasks = [], view = 'today', picked = '', editId = null, lastDeleted = null, toastTimer, storageOK = true, lastSaved = null;
+const $ = id => document.getElementById(id);
+
+/* ---------- dates (local time) ---------- */
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const offsetDay = n => { const d = new Date(); d.setDate(d.getDate()+n); return iso(d); };
+const today = () => offsetDay(0);
+const nice = s => new Date(s+'T00:00').toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- persistence ---------- */
+function loadFromLocalStorage(){
+  try { const raw = localStorage.getItem(KEY); tasks = raw ? JSON.parse(raw) : []; if(!Array.isArray(tasks)) tasks = []; }
+  catch(e){ tasks = []; storageOK = false; }
+}
+function saveToLocalStorage(){
+  try { localStorage.setItem(KEY, JSON.stringify(tasks)); storageOK = true; lastSaved = new Date(); }
+  catch(e){ storageOK = false; }
+  renderSync();
+}
+function renderSync(){
+  const s = $('sync');
+  s.className = 'sync' + (storageOK ? '' : ' err');
+  s.innerHTML = storageOK
+    ? `<b>● Saved to this browser</b><br>${tasks.length} task${tasks.length===1?'':'s'}${lastSaved?' · '+lastSaved.toLocaleTimeString():' loaded'}<br><button id="showData">Show saved data</button>`
+    : `<b>● Not saving</b><br>Browser storage is blocked. Tasks will be lost on refresh.`;
+  const b = $('showData'); if(b) b.onclick = () => { const w = window.open('','_blank'); if(w){ w.document.write('<pre style="white-space:pre-wrap">'+esc(localStorage.getItem(KEY)||'[]')+'</pre>'); } else alert(localStorage.getItem(KEY)||'[]'); };
+}
+
+/* ---------- logic ---------- */
+function checkOverdue(){ const t = today(); return tasks.filter(x => !x.done && x.date < t); }
+const prSort = (a,b) => a.done - b.done || a.priority - b.priority || a.created - b.created;
+function viewDate(){ return view==='yesterday' ? offsetDay(-1) : view==='tomorrow' ? offsetDay(1) : view==='date' ? picked : today(); }
+
+/* ---------- render ---------- */
+function taskHTML(t, showDate){
+  const late = !t.done && t.date < today();
+  return `<div class="task ${t.done?'done':''}" data-id="${t.id}">
+    <button class="chk p${t.priority}" data-a="toggle" role="checkbox" aria-checked="${t.done}" aria-label="Complete ${esc(t.title)}"></button>
+    <div class="body"><div class="ttl">${esc(t.title)}</div>${t.desc?`<div class="desc">${esc(t.desc)}</div>`:''}
+      <div class="meta"><span style="color:var(--p${t.priority})">⚑ P${t.priority}</span>${showDate?`<span class="${late?'late':''}">${late?'Overdue · ':''}${nice(t.date)}</span>`:''}</div></div>
+    <div class="acts"><button class="ic" data-a="edit" aria-label="Edit task">✎</button><button class="ic" data-a="del" aria-label="Delete task">🗑</button></div></div>`;
+}
+function section(label, arr, cls, showDate){
+  return arr.length ? `<h2 class="${cls||''}">${label} <span style="color:var(--mute);font-weight:400">${arr.length}</span></h2>${arr.sort(prSort).map(t=>taskHTML(t,showDate)).join('')}` : '';
+}
+function renderTasks(){
+  const t = today(), od = checkOverdue().sort((a,b)=>a.date.localeCompare(b.date)||prSort(a,b));
+  let html = '', title, sub = '';
+  if(view==='overdue'){ title='Overdue'; sub=`${od.length} unfinished task${od.length===1?'':'s'} before today`; html = od.map(x=>taskHTML(x,true)).join(''); }
+  else if(view==='all'){ title='All tasks'; sub=`${tasks.length} total`; html = [...tasks].sort((a,b)=>a.date.localeCompare(b.date)||prSort(a,b)).map(x=>taskHTML(x,true)).join(''); }
+  else {
+    const d = viewDate(), day = tasks.filter(x=>x.date===d);
+    title = view==='today'?'Today':view==='yesterday'?'Yesterday':view==='tomorrow'?'Tomorrow':nice(d);
+    sub = nice(d) + ` · ${day.filter(x=>x.done).length}/${day.length} done`;
+    if(view==='today') html += section('⚠ Overdue', od, 'od', true);
+    html += section(view==='today'?'Today':nice(d), day, '', false);
+  }
+  $('title').textContent = title; $('sub').textContent = sub;
+  $('list').innerHTML = html || `<div class="empty">${view==='overdue'?'Nothing overdue. Nice work.':'No tasks here yet. Use “Add task” to plan this day.'}</div>`;
+  $('tabs').innerHTML = [['yesterday','Yesterday'],['today','Today'],['tomorrow','Tomorrow'],['all','All tasks']].map(([v,l])=>`<button class="tab ${view===v?'on':''}" data-view="${v}" role="tab" aria-selected="${view===v}">${l}</button>`).join('');
+  document.querySelectorAll('.nav[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view===view));
+  $('pickDate').value = view==='date' ? picked : '';
+  const badge = $('odBadge'); badge.hidden = !od.length; badge.textContent = od.length;
+  ['yesterday','today','tomorrow'].forEach(v => $('n-'+v).textContent = tasks.filter(x=>!x.done && x.date===(v==='today'?t:offsetDay(v==='yesterday'?-1:1))).length || '');
+  $('n-all').textContent = tasks.filter(x=>!x.done).length || '';
+}
+
+/* ---------- actions ---------- */
+function setView(v, d){ view=v; if(d) picked=d; document.body.classList.remove('open'); renderTasks(); }
+function openDialog(id){
+  editId = id; const t = tasks.find(x=>x.id===id);
+  $('dTitle').textContent = t ? 'Edit task' : 'Add task';
+  $('fT').value = t ? t.title : ''; $('fD').value = t ? t.desc : '';
+  $('fDate').value = t ? t.date : (['overdue','all'].includes(view) ? today() : viewDate());
+  document.querySelector(`input[name=pr][value="${t?t.priority:4}"]`).checked = true;
+  $('dlg').showModal(); $('fT').focus();
+}
+function toast(msg, undo){ $('tMsg').textContent = msg; $('tUndo').hidden = !undo; $('toast').classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(()=>$('toast').classList.remove('show'), 5000); }
+
+$('form').addEventListener('submit', e => {
+  const title = $('fT').value.trim(); if(!title) return;
+  const data = { title, desc: $('fD').value.trim(), date: $('fDate').value, priority: +document.querySelector('input[name=pr]:checked').value };
+  if(editId){ Object.assign(tasks.find(x=>x.id===editId), data); toast('Task updated'); }
+  else { tasks.push({ id: crypto.randomUUID ? crypto.randomUUID() : 't'+Date.now()+Math.random().toString(36).slice(2), ...data, done:false, created: Date.now() }); toast('Task added'); }
+  saveToLocalStorage(); renderTasks();
+});
+$('cancel').onclick = () => $('dlg').close();
+$('add').onclick = () => openDialog(null);
+$('list').addEventListener('click', e => {
+  const b = e.target.closest('[data-a]'); if(!b) return;
+  const id = b.closest('.task').dataset.id, t = tasks.find(x=>x.id===id);
+  if(b.dataset.a==='toggle'){ t.done = !t.done; t.completedAt = t.done ? Date.now() : null; saveToLocalStorage(); renderTasks(); }
+  if(b.dataset.a==='edit') openDialog(id);
+  if(b.dataset.a==='del'){ lastDeleted = { t, i: tasks.indexOf(t) }; tasks = tasks.filter(x=>x.id!==id); saveToLocalStorage(); renderTasks(); toast('Task deleted', true); }
+});
+$('tUndo').onclick = () => { if(lastDeleted){ tasks.splice(lastDeleted.i,0,lastDeleted.t); lastDeleted=null; saveToLocalStorage(); renderTasks(); toast('Task restored'); } };
+document.addEventListener('click', e => { const n = e.target.closest('[data-view]'); if(n) setView(n.dataset.view); });
+$('pickDate').addEventListener('change', e => { if(e.target.value) setView('date', e.target.value); });
+$('menu').onclick = () => document.body.classList.add('open');
+$('scrim').onclick = () => document.body.classList.remove('open');
+document.addEventListener('keydown', e => { if(e.key==='Escape') document.body.classList.remove('open'); });
+window.addEventListener('storage', e => { if(e.key===KEY){ loadFromLocalStorage(); renderTasks(); renderSync(); } }); /* sync across tabs */
+
+/* ---------- init ---------- */
+loadFromLocalStorage(); renderSync(); renderTasks();
+</script>
+</body>
+</html>
